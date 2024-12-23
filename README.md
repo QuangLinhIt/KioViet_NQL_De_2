@@ -16,5 +16,10 @@ Phương án:
  2. Dùng kiểu lưu trữ 24 bit nhị phân 0,1 tương ứng với 24h ->các thao tác với bitwise có thể khó hiểu hơn
  3. Dùng bool[24] để thao tác với 24 h và chuyển array thành string để lưu trữ trong database -> thuận tiện, đơn giản, dễ thao tác -> chọn cách 3
 Giải thích Code:
-bool[24] tương ứng 24h nếu true -> có thể booking, false -> không thể booking
+- bool[24] tương ứng 24h (true -> có thể booking, false -> không thể booking)
+- Đặt phòng chia làm các trường hợp:
+   + nếu khoảng cách lớn hớn hoặc bằng 1 ngày -> booking ngày
+   + nếu khoảng cách nhỏ hơn 1 ngày và ngày bắt đàu và ngày kết thúc ở 2 ngày khác nhau -> chia làm 2 bước là booking ngày bắt đầu tới 23h và booking ngày kết thúc từ 0h tới giờ kết thúc.
+   + nếu khoảng cách nhỏ hơn 1 ngày và ngày kết thúc trùng ngày bắt đầu -> booking theo giờ
+ 
 
