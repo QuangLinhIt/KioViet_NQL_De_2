@@ -15,6 +15,8 @@ Phương án:
  1. Lưu trữ ngày bắt đầu và ngày kết thúc dạng DateTime -> nhược khó check phòng trống theo thời gian
  2. Dùng kiểu lưu trữ 24 bit nhị phân 0,1 tương ứng với 24h ->các thao tác với bitwise có thể khó hiểu hơn
  3. Dùng bool[24] để thao tác với 24 h và chuyển array thành string để lưu trữ trong database -> thuận tiện, đơn giản, dễ thao tác -> chọn cách 3
+
+
 Giải thích Code:
 - bool[24] tương ứng 24h (true -> có thể booking, false -> không thể booking)
 - Đặt phòng chia làm các trường hợp:
