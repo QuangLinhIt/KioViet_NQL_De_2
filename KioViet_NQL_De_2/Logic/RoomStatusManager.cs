@@ -87,7 +87,7 @@ namespace KioViet_NQL_De_2.Logic
                     return true;
                 }
                 var convert = new KioViet_NQL_De_2.Helper.Convert();
-                var boolSlotStatus = convert.ConvertReversedStringToBoolArray(existingRoomStatus.SlotStatus);
+                var boolSlotStatus = convert.ConvertStringToBoolArray(existingRoomStatus.SlotStatus);
                 for(int i = startHour; i <= endHour; i++)
                 {
                     if (boolSlotStatus[i] == false)

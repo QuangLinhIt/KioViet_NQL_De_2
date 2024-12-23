@@ -17,17 +17,16 @@ namespace KioViet_NQL_De_2.Helper
 
             return string.Join("", boolArray.Select(b => b ? '1' : '0'));
         }
-        public  bool[] ConvertReversedStringToBoolArray(string input)
+       
+        public bool[] ConvertStringToBoolArray(string input)
         {
             if (string.IsNullOrEmpty(input) || input.Length != 24)
             {
                 throw new ArgumentException("Input string must be non-null and have exactly 24 characters.");
             }
 
-            // Đảo ngược chuỗi và chuyển đổi thành bool[]
-            return input.Reverse().Select(c => c == '1').ToArray();
+            return input.Select(c => c == '1').ToArray();
         }
-
 
     }
 }

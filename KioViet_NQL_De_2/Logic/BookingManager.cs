@@ -97,30 +97,47 @@ namespace KioViet_NQL_De_2.Logic
             {
                 boolSlotStatus[i] = true;
             }
-            // Đặt các giờ đã chọn thành false
-            for (int i = startHour; i <= endHour; i++)
-            {
-                boolSlotStatus[i] = false;
-            }
-
-            var convert = new KioViet_NQL_De_2.Helper.Convert();
-            var stringSlotStatus = convert.ConvertBoolArrayToString(boolSlotStatus);
-            var roomStatus = new RoomStatus()
-            {
-                RoomId = roomId,
-                Time = time,
-                SlotStatus = stringSlotStatus,
-                IsEnableBookingByDay = false,
-            };
-
+           
             // Thêm hoặc chỉnh sửa Room Status
             var existingRoomStatus = RoomStatusManager.GetRoomStatus(roomId, time);
             if (existingRoomStatus == null)
             {
+                // Đặt các giờ đã chọn thành false
+                for (int i = startHour; i <= endHour; i++)
+                {
+                    boolSlotStatus[i] = false;
+                }
+
+                var convert = new KioViet_NQL_De_2.Helper.Convert();
+                var stringSlotStatus = convert.ConvertBoolArrayToString(boolSlotStatus);
+                var roomStatus = new RoomStatus()
+                {
+                    RoomId = roomId,
+                    Time = time,
+                    SlotStatus = stringSlotStatus,
+                    IsEnableBookingByDay = false,
+                };
+
                 RoomStatusManager.AddRoomStatus(roomStatus);
             }
             else
             {
+                var convert = new KioViet_NQL_De_2.Helper.Convert();
+                var boolExistingSlotStatus = convert.ConvertStringToBoolArray(existingRoomStatus.SlotStatus);
+                for (int i = startHour; i <= endHour; i++)
+                {
+                    boolExistingSlotStatus[i] = false;
+                }
+
+                var stringSlotStatus = convert.ConvertBoolArrayToString(boolExistingSlotStatus);
+                var roomStatus = new RoomStatus()
+                {
+                    RoomId = roomId,
+                    Time = time,
+                    SlotStatus = stringSlotStatus,
+                    IsEnableBookingByDay = false,
+                };
+
                 RoomStatusManager.UpdateRoomStatus(roomStatus);
             }
             return true;
