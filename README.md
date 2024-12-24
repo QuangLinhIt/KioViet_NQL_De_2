@@ -25,9 +25,10 @@ Giải thích Code:
    + nếu khoảng cách nhỏ hơn 1 ngày và ngày kết thúc trùng ngày bắt đầu -> booking theo giờ
 
  Giải thích chạy:
+ - chương trình console app nên chỉ cần: F5 để mở teminal thao tác.
  - nhập RoomId: mã phòng
  - nhập 1 (chọn booking theo ngày), nhập 2 (chọn booking theo giờ)
  - nếu booking theo ngày thì chỉ cần nhập [năm-tháng-ngày] bắt đầu và kết thúc. Giá trị giờ-phút lưu trong data mặc định 00:00
  - nếu booking theo giờ cần nhập [năm-tháng-ngày giờ] bắt đầu và kết thúc. Giá trị phút k được xét trong ví dụ này nên mặc định là 00
  - lưu ý: 1 ngày có 24h tương ứng từ 0h tới 23h59. Vì vậy nếu muốn đặt thời gian từ 23h tới 24h trong 1 ngày thì phải nhập ngày kết thúc là [năm-tháng-(ngày+1) 00]
-
+ - vì đây là code test các chức năng (k phải client layer) nên sau mỗi lần booking -> hiển thị danh sách các ngày tương ứng với roomId để check dễ dàng.
