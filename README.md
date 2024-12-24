@@ -23,5 +23,11 @@ Giải thích Code:
    + nếu khoảng cách lớn hớn hoặc bằng 1 ngày -> booking ngày
    + nếu khoảng cách nhỏ hơn 1 ngày và ngày bắt đàu và ngày kết thúc ở 2 ngày khác nhau -> chia làm 2 bước là booking ngày bắt đầu tới 23h và booking ngày kết thúc từ 0h tới giờ kết thúc.
    + nếu khoảng cách nhỏ hơn 1 ngày và ngày kết thúc trùng ngày bắt đầu -> booking theo giờ
- 
+
+ Giải thích chạy:
+ - nhập RoomId: mã phòng
+ - nhập 1 (chọn booking theo ngày), nhập 2 (chọn booking theo giờ)
+ - nếu booking theo ngày thì chỉ cần nhập [năm-tháng-ngày] bắt đầu và kết thúc. Giá trị giờ-phút lưu trong data mặc định 00:00
+ - nếu booking theo giờ cần nhập [năm-tháng-ngày giờ] bắt đầu và kết thúc. Giá trị phút k được xét trong ví dụ này nên mặc định là 00
+ - lưu ý: 1 ngày có 24h tương ứng từ 0h tới 23h59. Vì vậy nếu muốn đặt thời gian từ 23h tới 24h trong 1 ngày thì phải nhập ngày kết thúc là [năm-tháng-(ngày+1) 00]
 
