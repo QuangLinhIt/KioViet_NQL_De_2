@@ -1,160 +1,199 @@
 ﻿using KioViet_NQL_De_2.Data;
+using KioViet_NQL_De_2.Helper;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Convert = KioViet_NQL_De_2.Helper.Convert;
 
 namespace KioViet_NQL_De_2.Logic
 {
     public class BookingManager
     {
-        private readonly RoomStatusManager _roomStatusManager;
+        private static readonly List<Booking> _booking = new();
 
-        public BookingManager(RoomStatusManager roomStatusManager)
+        /// <summary>
+        /// Thêm Booking
+        /// </summary>
+        /// <param name="roomId">Mã phòng</param>
+        /// <param name="bookingType">Kiểu booking theo giờ hoặc ngày</param>
+        /// <param name="startBookingDateTime">năm-tháng-ngày giờ-phút bắt đầu đặt lịch</param>
+        /// <param name="endBookingDateTime">năm-tháng-ngày giờ-phút kết thúc đặt lịch</param>
+        public static void AddBooking(int roomId,string bookingType,DateTime startBookingDateTime,DateTime endBookingDateTime)
         {
-            _roomStatusManager = roomStatusManager;
+            var booking = new Booking()
+            {
+                RoomId = roomId,
+                BookingType = bookingType,
+                StartBookingDateTime = startBookingDateTime,
+                EndBookingDateTime = endBookingDateTime,
+            };
+            _booking.Add(booking);
         }
-        //đặt phòng
-        public bool BookingRoom(int roomId, DateTime startTime,DateTime endTime)
+
+        /// <summary>
+        /// hàm đặt lịch chính
+        /// </summary>
+        /// <param name="roomId">Mã phòng</param>
+        /// <param name="startBookingDateTime">Năm-tháng-ngày giờ-phút bắt đầu đặt lịch</param>
+        /// <param name="endBookingDateTime">Năm-tháng-ngày giờ-phút bắt đầu đặt lịch</param>
+        /// <returns></returns>
+        public static bool BookingRoom(int roomId, DateTime startBookingDateTime,DateTime endBookingDateTime)
         {
-            if (endTime < startTime)
+            if (endBookingDateTime <= startBookingDateTime)
             {
                 Console.WriteLine("Error: endTime cannot be earlier than startTime.");
                 return false;
             }
 
-            TimeSpan duration = endTime - startTime;
+            TimeSpan duration = endBookingDateTime - startBookingDateTime;
             //TH1: khoảng thời gian lớn hơn 1 ngày -> book ngày
             if (duration.Days > 0)
             {
-                return BookingByDay(roomId, DateOnly.FromDateTime(startTime), DateOnly.FromDateTime(endTime));
+                var isBookingByDay= BookingByDay(roomId, DateOnly.FromDateTime(startBookingDateTime), DateOnly.FromDateTime(endBookingDateTime));
+                if (isBookingByDay)
+                {
+                    //thêm mới Booking
+                    AddBooking(roomId, "BookingByDay", startBookingDateTime, endBookingDateTime);
+                    return true;
+                }
+                return false;
             }
             //TH2: khoảng thời gian ít hơn 1 ngày và nằm ở 2 ngày liên tiếp
-            else if(DateOnly.FromDateTime(startTime) != DateOnly.FromDateTime(endTime))
+            else if(DateOnly.FromDateTime(startBookingDateTime) != DateOnly.FromDateTime(endBookingDateTime))
             {
-                return BookingByHourBetweenTwoDays(roomId, startTime, endTime);
-
+                var isBookingByHourBetweenTwoDays= BookingByHourBetweenTwoDays(roomId, startBookingDateTime, endBookingDateTime);
+                if (isBookingByHourBetweenTwoDays)
+                {
+                    //thêm với booking
+                    AddBooking(roomId, "BookingByHour", startBookingDateTime, endBookingDateTime);
+                    return true;
+                }
+                return false;
             }
             //TH3: khoảng thời gian ít hơn 1 ngày và nằm ở cùng 1 ngày
-            else if (duration.Hours > 0)
-            {
-                return BookingByHour(roomId, DateOnly.FromDateTime(startTime), startTime.Hour, endTime.Hour);
-            }
             else
             {
+                var isBookingByHour= BookingByHour(roomId, DateOnly.FromDateTime(startBookingDateTime), startBookingDateTime.Hour, endBookingDateTime.Hour);
+                if (isBookingByHour)
+                {
+                    //thêm với booking
+                    AddBooking(roomId, "BookingByHour", startBookingDateTime, endBookingDateTime);
+                    return true;
+                }
                 return false;
             }
         }
-        //Đặt phòng theo ngày
-        private bool BookingByDay(int roomId,DateOnly startDay,DateOnly endDay)
+        
+
+        /// <summary>
+        /// hàm xử lí trường hợp 1 của hàm chính BookingRoom
+        /// </summary>
+        /// <param name="roomId">Mã phòng</param>
+        /// <param name="startDate">năm-tháng-ngày bắt đầu đặt lịch</param>
+        /// <param name="endDate">năm-tháng-ngày kết thúc đặt lịch</param>
+        /// <returns></returns>
+        private static bool BookingByDay(int roomId,DateOnly startDate,DateOnly endDate)
         {
             //Kiểm tra tất cả các ngày xem có phù hợp
-            for(DateOnly time = startDay; time <= endDay; time = time.AddDays(1))
+            var isEnableBookingByDate = RoomStatusManager.IsEnableBookingByDay(roomId,startDate,endDate);
+            if (isEnableBookingByDate == false)
             {
-                var isEnableBookingByDate = _roomStatusManager.IsEnableBookingByDay(roomId, time);
-                if (isEnableBookingByDate == false)
-                {
-                    Console.WriteLine("Booking by day fail");
-                    return false;
-                }
+                Console.WriteLine("=====> Booking by hour fail");
+                return false;
             }
-            //Thêm hoặc chỉnh sửa Room status
-            for (DateOnly time = startDay; time <= endDay; time = time.AddDays(1))
+
+            //Thêm Room status
+            for (DateOnly bookingDate = startDate; bookingDate < endDate; bookingDate = bookingDate.AddDays(1))
             {
-                var existingRoomStatus = RoomStatusManager.GetRoomStatus(roomId, time);
+                //Nếu đã cho phép đặt ngày tức là không có nên ta khởi tạo dữu liệu mặc định 
+                RoomStatusManager.InitRoomStatus(roomId, bookingDate);
                 var roomStatus = new RoomStatus()
                 {
                     RoomId = roomId,
-                    Time = time,
-                    SlotStatus = "000000000000000000000000",
+                    BookingDate = bookingDate,
+                    BookingDateStatus = "000000000000000000000000",
                     IsEnableBookingByDay = false,
                 };
-                if (existingRoomStatus == null)
-                {
-                    RoomStatusManager.AddRoomStatus(roomStatus);
-                }
+                //update room status 
                 RoomStatusManager.UpdateRoomStatus(roomStatus);
             }
             return true;
         }
 
-        // Đặt phòng theo giờ trong 1 ngày
-        private bool BookingByHour(int roomId, DateOnly time, int startHour, int endHour)
+        /// <summary>
+        /// Hàm xử lí TH3 của hàm chính BookingRoom
+        /// </summary>
+        /// <param name="roomId"></param>
+        /// <param name="bookingDate"></param>
+        /// <param name="startHour"></param>
+        /// <param name="endHour"></param>
+        /// <returns></returns>
+        private static bool BookingByHour(int roomId, DateOnly bookingDate, int startHour, int endHour)
         {
             // Kiểm tra giờ có phù hợp
-            var isEnableBookingByHour = _roomStatusManager.IsEnableBookingByHour(roomId, time, startHour, endHour);
+            var isEnableBookingByHour = RoomStatusManager.IsEnableBookingByHour(roomId, bookingDate, startHour, endHour);
             if (!isEnableBookingByHour)
             {
-                Console.WriteLine("Booking by hour fail");
+                Console.WriteLine("=====> Booking by hour fail");
                 return false;
             }
 
             // Tạo array 24 phần tử kiểu bool tương ứng 24h trong ngày
-            var boolSlotStatus = new bool[24];
-            // Mặc định tất cả bằng true
-            for (int i = 0; i < 24; i++)
-            {
-                boolSlotStatus[i] = true;
-            }
-           
-            // Thêm hoặc chỉnh sửa Room Status
-            var existingRoomStatus = RoomStatusManager.GetRoomStatus(roomId, time);
+            var boolSlotStatus = new bool[24] { true,true,true,true,true,true,true,true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true };
+            //Check sự tồn tại
+            var existingRoomStatus = RoomStatusManager.GetByRoomIdAndBookingDate(roomId, bookingDate);
+            var roomStatus = new RoomStatus();
+            roomStatus.RoomId = roomId;
+            roomStatus.BookingDate = bookingDate;
+            roomStatus.IsEnableBookingByDay = false;
+            //nếu null tạo một data mặc định
             if (existingRoomStatus == null)
             {
-                // Đặt các giờ đã chọn thành false
-                for (int i = startHour; i <= endHour; i++)
-                {
-                    boolSlotStatus[i] = false;
-                }
-
-                var convert = new KioViet_NQL_De_2.Helper.Convert();
-                var stringSlotStatus = convert.ConvertBoolArrayToString(boolSlotStatus);
-                var roomStatus = new RoomStatus()
-                {
-                    RoomId = roomId,
-                    Time = time,
-                    SlotStatus = stringSlotStatus,
-                    IsEnableBookingByDay = false,
-                };
-
-                RoomStatusManager.AddRoomStatus(roomStatus);
+                RoomStatusManager.InitRoomStatus(roomId,bookingDate);
+                roomStatus.BookingDateStatus = "111111111111111111111111";
             }
             else
             {
-                var convert = new KioViet_NQL_De_2.Helper.Convert();
-                var boolExistingSlotStatus = convert.ConvertStringToBoolArray(existingRoomStatus.SlotStatus);
-                for (int i = startHour; i <= endHour; i++)
-                {
-                    boolExistingSlotStatus[i] = false;
-                }
-
-                var stringSlotStatus = convert.ConvertBoolArrayToString(boolExistingSlotStatus);
-                var roomStatus = new RoomStatus()
-                {
-                    RoomId = roomId,
-                    Time = time,
-                    SlotStatus = stringSlotStatus,
-                    IsEnableBookingByDay = false,
-                };
-
-                RoomStatusManager.UpdateRoomStatus(roomStatus);
+                roomStatus.BookingDateStatus = existingRoomStatus.BookingDateStatus;
             }
+            //update lại trường BookingDateStatus
+            var boolBookingDateStatus = Convert.ConvertStringToBoolArray(roomStatus.BookingDateStatus);
+            for (int i = startHour; i < endHour; i++)
+            {
+                boolBookingDateStatus[i] = false;
+            }
+            var stringBookingDateStatus = Convert.ConvertBoolArrayToString(boolBookingDateStatus);
+            roomStatus.BookingDateStatus = stringBookingDateStatus;
+            if (roomStatus.BookingDateStatus == "111111111111111111111111")
+            {
+                roomStatus.IsEnableBookingByDay = true;
+            }
+            //Update dữ liệu
+            RoomStatusManager.UpdateRoomStatus(roomStatus);
             return true;
         }
 
-        //Đặt phòng theo giờ (<24h) nhưng khác ngày (nằm giữa 2 ngày liên tiếp)
-        private bool BookingByHourBetweenTwoDays(int roomId,DateTime startTime,DateTime endTime)
+        /// <summary>
+        /// Hàm xứ lí TH2 của hàm chính BookingRoom
+        /// </summary>
+        /// <param name="roomId"></param>
+        /// <param name="startBookingDateTime"></param>
+        /// <param name="endBookingDateTime"></param>
+        /// <returns></returns>
+        private static bool BookingByHourBetweenTwoDays(int roomId,DateTime startBookingDateTime,DateTime endBookingDateTime)
         {
-            // Kiểm tra giờ có phù hợp cho ngày đầu (từ giờ bắt đầu đến 23h59)
-            var isEnableBookingByHourInDay1 = _roomStatusManager.IsEnableBookingByHour(roomId, DateOnly.FromDateTime(startTime), startTime.Hour, 23);
+            // Kiểm tra giờ có phù hợp cho ngày đầu (từ giờ bắt đầu đến 24h)
+            var isEnableBookingByHourInDay1 = RoomStatusManager.IsEnableBookingByHour(roomId, DateOnly.FromDateTime(startBookingDateTime), startBookingDateTime.Hour, 24);
             // Kiểm tra giờ có phù hợp cho ngày thứ hai (từ 00h00 đến giờ kết thúc)
-            var isEnableBookingByHourInDay2 = _roomStatusManager.IsEnableBookingByHour(roomId, DateOnly.FromDateTime(endTime), 0, endTime.Hour);
+            var isEnableBookingByHourInDay2 = RoomStatusManager.IsEnableBookingByHour(roomId, DateOnly.FromDateTime(endBookingDateTime), 0, endBookingDateTime.Hour);
 
             if (isEnableBookingByHourInDay1 && isEnableBookingByHourInDay2)
             {
-                BookingByHour(roomId, DateOnly.FromDateTime(startTime),startTime.Hour,23);
-                BookingByHour(roomId, DateOnly.FromDateTime(endTime), 0, endTime.Hour);
+                BookingByHour(roomId, DateOnly.FromDateTime(startBookingDateTime), startBookingDateTime.Hour,24);
+                BookingByHour(roomId, DateOnly.FromDateTime(endBookingDateTime), 0, endBookingDateTime.Hour);
                 return true;
             }
             return false;

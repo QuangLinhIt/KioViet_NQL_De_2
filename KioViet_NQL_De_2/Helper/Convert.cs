@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace KioViet_NQL_De_2.Helper
 {
-    public class Convert
+    public static class Convert
     {
-        public  string ConvertBoolArrayToString(bool[] boolArray)
+        public static string ConvertBoolArrayToString(bool[] boolArray)
         {
             if (boolArray == null || boolArray.Length != 24)
             {
@@ -18,7 +18,7 @@ namespace KioViet_NQL_De_2.Helper
             return string.Join("", boolArray.Select(b => b ? '1' : '0'));
         }
        
-        public bool[] ConvertStringToBoolArray(string input)
+        public static bool[] ConvertStringToBoolArray(string input)
         {
             if (string.IsNullOrEmpty(input) || input.Length != 24)
             {
